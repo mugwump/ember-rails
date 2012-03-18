@@ -1,134 +1,4 @@
 (function(exports) {
-/*global __fail__*/
-/**
-  Define an assertion that will throw an exception if the condition is not
-  met.  Ember build tools will remove any calls to ember_assert() when
-  doing a production build.
-
-  ## Examples
-
-      #js:
-
-      // pass a simple Boolean value
-      ember_assert('must pass a valid object', !!obj);
-
-      // pass a function.  If the function returns false the assertion fails
-      // any other return value (including void) will pass.
-      ember_assert('a passed record must have a firstName', function() {
-        if (obj instanceof Ember.Record) {
-          return !Ember.empty(obj.firstName);
-        }
-      });
-
-  @static
-  @function
-  @param {String} desc
-    A description of the assertion.  This will become the text of the Error
-    thrown if the assertion fails.
-
-  @param {Boolean} test
-    Must return true for the assertion to pass.  If you pass a function it
-    will be executed.  If the function returns false an exception will be
-    thrown.
-*/
-window.ember_assert = window.sc_assert = function ember_assert(desc, test) {
-  if ('function' === typeof test) test = test()!==false;
-  if (!test) throw new Error("assertion failed: "+desc);
-};
-
-
-/**
-  Display a warning with the provided message. Ember build tools will
-  remove any calls to ember_warn() when doing a production build.
-
-  @static
-  @function
-  @param {String} message
-    A warning to display.
-
-  @param {Boolean} test
-    An optional boolean or function. If the test returns false, the warning
-    will be displayed.
-*/
-window.ember_warn = function(message, test) {
-  if (arguments.length === 1) { test = false; }
-  if ('function' === typeof test) test = test()!==false;
-  if (!test) console.warn("WARNING: "+message);
-};
-
-/**
-  Display a deprecation warning with the provided message and a stack trace
-  (Chrome and Firefox only). Ember build tools will remove any calls to
-  ember_deprecate() when doing a production build.
-
-  @static
-  @function
-  @param {String} message
-    A description of the deprecation.
-
-  @param {Boolean} test
-    An optional boolean or function. If the test returns false, the deprecation
-    will be displayed.
-*/
-window.ember_deprecate = function(message, test) {
-  if (Ember.TESTING_DEPRECATION) { return; }
-
-  if (arguments.length === 1) { test = false; }
-  if ('function' === typeof test) { test = test()!==false; }
-  if (test) { return; }
-
-  if (Ember.ENV.RAISE_ON_DEPRECATION) { throw new Error(message); }
-
-  var error, stackStr = '';
-
-  // When using new Error, we can't do the arguments check for Chrome. Alternatives are welcome
-  try { __fail__.fail(); } catch (e) { error = e; }
-
-  if (error.stack) {
-    var stack;
-
-    if (error['arguments']) {
-      // Chrome
-      stack = error.stack.replace(/^\s+at\s+/gm, '').
-                          replace(/^([^\(]+?)([\n$])/gm, '{anonymous}($1)$2').
-                          replace(/^Object.<anonymous>\s*\(([^\)]+)\)/gm, '{anonymous}($1)').split('\n');
-      stack.shift();
-    } else {
-      // Firefox
-      stack = error.stack.replace(/(?:\n@:0)?\s+$/m, '').
-                          replace(/^\(/gm, '{anonymous}(').split('\n');
-    }
-
-    stackStr = "\n    " + stack.slice(2).join("\n    ");
-  }
-
-  console.warn("DEPRECATION: "+message+stackStr);
-};
-
-
-
-/**
-  Display a deprecation warning with the provided message and a stack trace
-  (Chrome and Firefox only) when the wrapped method is called.
-
-  @static
-  @function
-  @param {String} message
-    A description of the deprecation.
-
-  @param {Function} func
-    The function to be deprecated.
-*/
-window.ember_deprecateFunc = function(message, func) {
-  return function() {
-    window.ember_deprecate(message);
-    return func.apply(this, arguments);
-  };
-};
-
-})({});
-
-(function(exports) {
 // ==========================================================================
 // Project:  Ember Metal
 // Copyright: ©2011 Strobe Inc. and contributors.
@@ -411,7 +281,7 @@ if (!platform.defineProperty) {
   platform.hasPropertyAccessors = false;
 
   platform.defineProperty = function(obj, keyName, desc) {
-    ember_assert("property descriptor cannot have `get` or `set` on this platform", !desc.get && !desc.set);
+
     obj[keyName] = desc.value;
   };
 
@@ -823,7 +693,6 @@ if (!USE_ACCESSORS) {
       obj = Ember;
     }
 
-    ember_assert("You need to provide an object and key to `get`.", !!obj && keyName);
 
     if (!obj) return undefined;
     var desc = meta(obj, false).descs[keyName];
@@ -833,7 +702,7 @@ if (!USE_ACCESSORS) {
 
   /** @private */
   set = function(obj, keyName, value) {
-    ember_assert("You need to provide an object and key to `set`.", !!obj && keyName !== undefined);
+
     var desc = meta(obj, false).descs[keyName];
     if (desc) desc.set(obj, keyName, value);
     else o_set(obj, keyName, value);
@@ -909,7 +778,7 @@ Ember.set = set;
 
 /** @private */
 function normalizePath(path) {
-  ember_assert('must pass non-empty string to normalizePath()', path && path!=='');
+
 
   if (path==='*') return path; //special case...
   var first = path.charAt(0);
@@ -1055,7 +924,7 @@ Ember.getPath = function(root, path, _checkGlobal) {
   hasThis  = HAS_THIS.test(path);
 
   if (!root || hasThis || hasStar) {
-    ember_deprecate("Fetching globals with Ember.getPath is deprecated (root: "+root+", path: "+path+")", !root || root === window || !IS_GLOBAL.test(path));
+
 
     var tuple = normalizeTuple(root, path);
     root = tuple[0];
@@ -1066,7 +935,7 @@ Ember.getPath = function(root, path, _checkGlobal) {
   ret = getPath(root, path);
 
   if (ret === undefined && !pathOnly && !hasThis && root !== window && IS_GLOBAL.test(path) && _checkGlobal !== false) {
-    ember_deprecate("Fetching globals with Ember.getPath is deprecated (root: "+root+", path: "+path+")");
+
     return Ember.getPath(window, path);
   } else {
     return ret;
@@ -1084,7 +953,7 @@ Ember.setPath = function(root, path, value, tolerant) {
 
   path = normalizePath(path);
   if (path.indexOf('*')>0) {
-    ember_deprecate("Setting globals with Ember.setPath is deprecated (path: "+path+")", !root || root === window || !IS_GLOBAL.test(path));
+
 
     var tuple = normalizeTuple(root, path);
     root = tuple[0];
@@ -1099,7 +968,7 @@ Ember.setPath = function(root, path, value, tolerant) {
       // Remove the `false` when we're done with this deprecation
       root = Ember.getPath(root, path, false);
       if (!root && IS_GLOBAL.test(path)) {
-        ember_deprecate("Setting globals with Ember.setPath is deprecated (path: "+path+")");
+
         root = Ember.getPath(window, path);
       }
     }
@@ -1296,16 +1165,16 @@ Dp.val = function(obj, keyName) {
 if (!USE_ACCESSORS) {
   Ember.Descriptor.MUST_USE_GETTER = function() {
     if (this instanceof Ember.Object) {
-      ember_assert('Must use Ember.get() to access this property', false);
+
     }
   };
 
   Ember.Descriptor.MUST_USE_SETTER = function() {
     if (this instanceof Ember.Object) {
       if (this.isDestroyed) {
-        ember_assert('You cannot set observed properties on destroyed objects', false);
+
       } else {
-        ember_assert('Must use Ember.set() to access this property', false);
+
       }
     }
   };
@@ -2977,7 +2846,7 @@ function invokeAction(action, params) {
   @memberOf Ember
 */
 function addListener(obj, eventName, target, method, xform) {
-  ember_assert("You must pass at least an object and event name to Ember.addListener", !!obj && !!eventName);
+
 
   if (!method && 'function' === typeof target) {
     method = target;
@@ -3923,7 +3792,7 @@ Ember.run.begin = function() {
   @returns {void}
 */
 Ember.run.end = function() {
-  ember_assert('must have a current run loop', run.currentRunLoop);
+
   try {
     run.currentRunLoop.end();
   }
@@ -4685,7 +4554,7 @@ Binding.prototype = /** @scope Ember.Binding.prototype */ {
     @returns {Ember.Binding} this
   */
   connect: function(obj) {
-    ember_assert('Must pass a valid object to Ember.Binding.connect()', !!obj);
+
 
     var oneWay = this._oneWay, operand = this._operand;
 
@@ -4715,7 +4584,7 @@ Binding.prototype = /** @scope Ember.Binding.prototype */ {
     @returns {Ember.Binding} this
   */
   disconnect: function(obj) {
-    ember_assert('Must pass a valid object to Ember.Binding.disconnect()', !!obj);
+
 
     var oneWay = this._oneWay, operand = this._operand;
 
@@ -5379,7 +5248,6 @@ function _copy(obj, deep, seen, copies) {
   // avoid cyclical loops
   if (deep && (loc=indexOf(seen, obj))>=0) return copies[loc];
 
-  ember_assert('Cannot clone an Ember.Object that does not implement Ember.Copyable', !(obj instanceof Ember.Object) || (Ember.Copyable && Ember.Copyable.detect(obj)));
 
   // IMPORTANT: this specific test will detect a native array only.  Any other
   // object will need to implement Copyable.
@@ -8395,7 +8263,6 @@ var ClassMixin = Ember.Mixin.create({
   metaForProperty: function(key) {
     var desc = meta(this.proto(), false).descs[key];
 
-    ember_assert("metaForProperty() could not find a computed property with key '"+key+"'.", !!desc && desc instanceof Ember.ComputedProperty);
     return desc._meta || {};
   },
 
@@ -8863,7 +8730,7 @@ Ember.Set = Ember.CoreObject.extend(Ember.MutableEnumerable, Ember.Copyable, Emb
 var o_create = Ember.Set.create;
 Ember.Set.create = function(items) {
   if (items && Ember.Enumerable.detect(items)) {
-    ember_deprecate('Passing an enumerable to Ember.Set.create() is deprecated and will be removed in a future version of Ember.  Use new Ember.Set(items) instead.');
+
     return new Ember.Set(items);
   } else {
     return o_create.apply(this, arguments);
